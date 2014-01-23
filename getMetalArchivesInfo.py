@@ -1,9 +1,15 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from sys import *
+if version[0] != '3':
+	print('Please use python version 3')
+	exit(2)
+
 from subprocess import call
 from urllib.request import *
 from urllib.parse import quote_plus
 from json import loads
-from sys import *
 from re import search
 import argparse
 
@@ -376,7 +382,9 @@ except IOError:
 	print('No file with data found, starting interactive mode (break with ctrl+c)')
 	while True:
 		try:
-			dataToSearch.append(input('Please insert a ' + TYPE + ' name you want to search for: '))
+			newData = input('Please insert a ' + TYPE + ' name you want to search for: ')
+			if (newData != ""):
+				dataToSearch.append(newData)
 		except KeyboardInterrupt:
 			break
 else:
