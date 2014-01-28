@@ -103,18 +103,36 @@ class Regex():
 		return self.result
 
 class DiscoHTMLParser(HTMLParser):
-	dataCount = 0
-	BOUNDARY = 3
-	dataToFind = [[]]
+	dataToFind = []
+	tr = False
+	body = False
 
-	def handle_data(self, htmlTable):
-		if (-1 == htmlTable.find('\\') and 2 < len(htmlTable)):
-			if (self.dataCount <= self.BOUNDARY):
-				self.dataToFind[-1].append(htmlTable)
-				self.dataCount += 1
-			else:
-				self.dataToFind.append([htmlTable])
-				self.dataCount = 1
+	def handle_starttag(self, tag, attrs):
+		if ('tr' == tag):
+			self.tr = True
+			if (self.body):
+				self.dataToFind.append([])
+		if ('tbody' == tag):
+			self.body = True
+
+	def handle_endtag(self, tag):
+		if ('tr' == tag):
+			self.tr = False
+			if (0 < len(self.dataToFind)):
+				tmp = self.dataToFind[-1]
+				if (4 < len(tmp)):
+					tmp.pop(3)
+					self.dataToFind[-1] = tmp
+
+	def handle_data(self, htmlData):
+		data = htmlData.replace('\\n', '').replace('\\t', '')
+		if (len(data) > 0 and self.body and self.tr):
+			self.dataToFind[-1].append(data)
+
+	def clearResults(self):
+		self.dataToFind = []
+		self.tr = False
+		self.body = False
 
 class EntityList():
 	headerList = []
@@ -352,12 +370,10 @@ class Engine():
 				self.entityList = SongList([])
 				self.entity = SongEntity()
 		else:
-			if (Arguments.BAND_TYPE == self.ar.queryType):
+			if (Arguments.BAND_TYPE == self.ar.queryType or \
+				Arguments.DISCO_TYPE == self.ar.queryType):
 
 				self.entity = ArtistEntity()
-			elif (Arguments.DISCO_TYPE == self.ar.queryType):
-
-				self.entity = DiscoEntity()
 			elif (Arguments.ALBUM_TYPE == self.ar.queryType):
 
 				self.entity = AlbumEntity()
@@ -370,10 +386,10 @@ class Engine():
 		self.getSearchData()
 		self.queryData()
 
-		print(self.entityList.printOut(fileName=self.ar.fileToWrite))
-
 		if (Arguments.DISCO_TYPE == self.ar.queryType):
 			self.getDiscography()
+		else:
+			print(self.entityList.printOut(fileName=self.ar.fileToWrite))
 
 	def numberCheck(self, numberString, minN, maxN):
 		try:
@@ -483,60 +499,24 @@ class Engine():
 					print()
 					break
 	def getDiscography(self):
-		tmpList = DiscoList([])
-		ma = MASearcher(tmpList.queryString)
+		ma = MASearcher(DiscoList([]).queryString)
 		htmlParser = DiscoHTMLParser(strict=False)
 		for each in self.entityList.listEntries:
+			print(each.output())
+			tmpList = DiscoList([])
 			htmlData = ma.getRawQuery(each.artistID)
 			htmlParser.feed(str(htmlData))
 			for album in htmlParser.dataToFind:
-				print(htmlParser.dataToFind)
 				tmpEntity = DiscoEntity()
 				tmpEntity.name = album[0]
 				tmpEntity.rating = album[3]
 				tmpEntity.albumType = album[1]
 				tmpEntity.year = album[2]
 				tmpList.addEntry(tmpEntity)
-
-		#remove first entry, because it is the table header
-		tmpList.listEntries.pop(0)
-		print(tmpList.printOut())
+			print(tmpList.printOut())
+			htmlParser.reset()
+			htmlParser.clearResults()
 
 if __name__ == '__main__':
-	'''al = ArtistList([])
-	a = ArtistEntity(name='Marduk', country='sweden', \
-		genre='black metal', artistID=386)
-	al.addEntry(a)
-	ab = AlbumEntity(albumType='Full-Length', artist=a, \
-		name='Plague Angel', rating='82%', year='2003')
-	abl = AlbumList([])
-	abl.addEntry(ab)
-	s = SongEntity(track=1, title='Fuck Me Jesus', album=ab)
-	sl = SongList([])
-	sl.addEntry(s)
-	for i in range(0, len(al.listEntries)):
-		print(al.listEntries[i].name)
-
-	print(abl.printOut())
-	print(al.printOut())
-	print(sl.printOut(fileName='asd'))
-
-	r = Regex(Regex.ID_REGEX)
-	print(r.search('http://www.metal-archives.com/band/discography/id/' + \
-		'43892'))
-	r.pattern = Regex.URL_REGEX
-	print(r.search('<a href=\"http://www.metal-archives.com/bands/' + \
-		'Marduk/29435\">Marduk</a>  <!-- 11.40912 -->'))
-	r.pattern = Regex.NAME_REGEX
-	print(r.search('<a href=\"http://www.metal-archives.com/bands/' + \
-		'Marduk/29435\">Marduk</a>  <!-- 11.40912 -->'))
-	r = Regex(Regex.DATE_REGEX)
-	print(r.search('May 1st, 2007 <!-- 2007-05-01 -->'))
-	'''
 	e = Engine()
 	e.start()
-	'''try:
-		print(e.ar.fileToRead + ' ' + e.ar.fileToWrite)
-	except TypeError:
-		print('at least one cli attribute was not read in')
-	'''
