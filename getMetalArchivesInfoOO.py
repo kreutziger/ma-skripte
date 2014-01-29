@@ -5,6 +5,7 @@ import re
 import json
 import urllib.parse
 import urllib.request
+import http.client
 import argparse
 from html.parser import HTMLParser
 from subprocess import call
@@ -138,8 +139,10 @@ class EntityList():
 	headerList = []
 	queryString = ''
 	listEntries = []
-	logoLink = 'http://www.metal-archives.com/images'
+	logoHost = 'www.metal-archives.com'
+	logoDir = '/images'
 	logoExtension = ''
+	logoFileType = ['.gif', '.jpg', '.png']
 
 	def __init__(self, listEntries):
 		self.listEntries = listEntries
@@ -159,14 +162,25 @@ class EntityList():
 		http://www.metal-archives.com/images/1/0/0/0/100000_logo.jpg
 
 		'''
-		result = self.logoLink
+		result = self.logoHost
 		try:
 			tmp = list(str(entityID))
 			for i in range(0, 4):
 				result += '/' + tmp.pop(0)
 		except IndexError:
 			pass
-		return result + '/' + entityID + self.logoExtension
+		result += '/' + entityID + self.logoExtension
+		try:
+			h = http.client.HTTPConnection(self.logoHost)
+			for each in self.logoFileType:
+				h.request('HEAD', result + each)
+				if (200 == h.getresponse().status):
+					return self.logoHost + result + each
+		except IOError as err:
+			print('network problems (probably proxy stuff) {0}' \
+				.format(err))
+			
+		return self.logoHost + result
 
 	def printOut(self, sep='\t', fileName=None, linkAddress=False):
 		result = ''
