@@ -138,6 +138,8 @@ class EntityList():
 	headerList = []
 	queryString = ''
 	listEntries = []
+	logoLink = 'http://www.metal-archives.com/images'
+	logoExtension = ''
 
 	def __init__(self, listEntries):
 		self.listEntries = listEntries
@@ -148,11 +150,32 @@ class EntityList():
 	def headers(self):
 		return headerList
 
-	def printOut(self, sep='\t', fileName=None):
+	def createLogoID(self, entityID):
+		'''
+		examples:
+		album:
+		http://www.metal-archives.com/images/3/9/4/8/394846.jpg
+		band:
+		http://www.metal-archives.com/images/1/0/0/0/100000_logo.jpg
+
+		'''
+		result = self.logoLink
+		try:
+			tmp = list(str(entityID))
+			for i in range(0, 4):
+				result += '/' + tmp.pop(0)
+		except IndexError:
+			pass
+		return result + '/' + entityID + self.logoExtension
+
+	def printOut(self, sep='\t', fileName=None, linkAddress=False):
 		result = ''
 		result += sep.join(self.headerList) + '\n'
 		for each in self.listEntries:
 			result += each.output(sep) + '\n'
+			if (linkAddress):
+				result += self.createLogoID(each.entityID) \
+					+ '\n'
 	
 		if (None != fileName):
 			try:
@@ -168,6 +191,7 @@ class ArtistList(EntityList):
 	headerList = ['Band', 'Country', 'Genre']
 	queryString = 'http://www.metal-archives.com/search/ajax-band-' + \
 			'search/?field=name&query='
+	logoExtension = '_logo'
 
 class AlbumList(EntityList):
 	headerList = ['Band', 'Album', 'Type', 'Year']
@@ -192,19 +216,19 @@ class Entity():
 		pass
 
 class ArtistEntity(Entity):
-	def __init__(self, name='', country='', genre='', artistID=0, \
+	def __init__(self, name='', country='', genre='', entityID=0, \
 			albumList = AlbumList([])):
 		self.name = name
 		self.country = country
 		self.genre = genre
-		self.artistID = artistID
+		self.entityID = entityID
 		self.albumList = albumList
 
 		self.regex = Regex()
 
 	def normalize(self, maSearcherResult):
 		self.regex.pattern = Regex.ID_REGEX
-		self.artistID = self.regex.search(maSearcherResult[0])
+		self.entityID = self.regex.search(maSearcherResult[0])
 		self.regex.pattern = Regex.NAME_REGEX
 		self.name = self.regex.search(maSearcherResult[0])
 		self.genre = maSearcherResult[1]
@@ -217,13 +241,15 @@ class ArtistEntity(Entity):
 class AlbumEntity(Entity):
 	#def __init__(self, albumType='', artist=ArtistEntity(), name='', \
 	def __init__(self, albumType='', artist='', name='', \
-			rating='', year='', songs=SongList([])):
+			rating='', year='', songs=SongList([]), \
+			entityID=0):
 		self.albumType = albumType
 		self.artist = artist
 		self.name = name
 		self.rating = rating
 		self.year = year
 		self.songs = songs
+		self.entityID = entityID
 
 		self.regex = Regex()
 
@@ -234,6 +260,8 @@ class AlbumEntity(Entity):
 		self.name = self.regex.search(maSearcherResult[1])
 		self.regex.pattern = Regex.DATE_REGEX
 		self.year = self.regex.search(maSearcherResult[3])
+		self.regex.pattern = Regex.ID_REGEX
+		self.entityID = self.regex.search(maSearcherResult[1])
 
 	def output(self, sep='\t'):
 		#return sep.join([self.artist.name, self.name, self.albumType, \
@@ -307,6 +335,7 @@ class Arguments():
 	queryType = ''
 	fileToWrite = ''
 	discographyMode = ''
+	logos = False
 
 	BAND_TYPE = 'band'
 	ALBUM_TYPE = 'album'
@@ -329,11 +358,15 @@ class Arguments():
 		parser.add_argument('-o', '--output', nargs=1, type=str, \
 			help='If you want the output in an extra csv-file' + \
 			' set this option', action='store')
+		parser.add_argument('-l', '--logos', action='store_true', \
+			help='Set this option to get the image links of ' + \
+			' the searched entities')
 		args = parser.parse_args()
 
 		self.fileToRead = self.getString(args.file)
 		self.fileToWrite = self.getString(args.output)
 		self.queryType = self.getString(args.type)
+		self.logos = args.logos
 
 	def getString(self, element):
 		if (isinstance(element, list)):
@@ -389,7 +422,9 @@ class Engine():
 		if (Arguments.DISCO_TYPE == self.ar.queryType):
 			self.getDiscography()
 		else:
-			print(self.entityList.printOut(fileName=self.ar.fileToWrite))
+			print(self.entityList.printOut(fileName=\
+				self.ar.fileToWrite,linkAddress=\
+				self.ar.logos))
 
 	def numberCheck(self, numberString, minN, maxN):
 		try:
@@ -504,7 +539,7 @@ class Engine():
 		for each in self.entityList.listEntries:
 			print(each.output())
 			tmpList = DiscoList([])
-			htmlData = ma.getRawQuery(each.artistID)
+			htmlData = ma.getRawQuery(each.entityID)
 			htmlParser.feed(str(htmlData))
 			for album in htmlParser.dataToFind:
 				tmpEntity = DiscoEntity()
