@@ -8,4 +8,4 @@ Because of queries to clarify the purpose of this tool, the intended use is, to 
 
 ## Known Problems
 
-If a country is not in the country dict, the output can break, just add the country to the dictionary. Also you should use the -l/--logo option only on bands and album searches.
+If a country is not in the country dict, the output can break, just add the country to the dictionary.

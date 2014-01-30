@@ -107,22 +107,27 @@ class DiscoHTMLParser(HTMLParser):
 	dataToFind = []
 	tr = False
 	body = False
+	onlyA = False
 
 	def handle_starttag(self, tag, attrs):
 		if ('tr' == tag):
 			self.tr = True
+			self.onlyA = True
 			if (self.body):
 				self.dataToFind.append([])
 		if ('tbody' == tag):
 			self.body = True
+		if (self.onlyA and 'a' == tag):
+			self.onlyA = False
+			self.dataToFind[-1].append(attrs[0][1])
 
 	def handle_endtag(self, tag):
 		if ('tr' == tag):
 			self.tr = False
 			if (0 < len(self.dataToFind)):
 				tmp = self.dataToFind[-1]
-				if (4 < len(tmp)):
-					tmp.pop(3)
+				if (5 < len(tmp)):
+					tmp.pop(4)
 					self.dataToFind[-1] = tmp
 
 	def handle_data(self, htmlData):
@@ -162,7 +167,7 @@ class EntityList():
 		http://www.metal-archives.com/images/1/0/0/0/100000_logo.jpg
 
 		'''
-		result = self.logoHost
+		result = self.logoHost + self.logoDir
 		try:
 			tmp = list(str(entityID))
 			for i in range(0, 4):
@@ -175,12 +180,12 @@ class EntityList():
 			for each in self.logoFileType:
 				h.request('HEAD', result + each)
 				if (200 == h.getresponse().status):
-					return self.logoHost + result + each
+					return result + each
 		except IOError as err:
 			print('network problems (probably proxy stuff) {0}' \
 				.format(err))
 			
-		return self.logoHost + result
+		return result
 
 	def printOut(self, sep='\t', fileName=None, linkAddress=False):
 		result = ''
@@ -283,13 +288,14 @@ class AlbumEntity(Entity):
 			 self.year])
 
 class DiscoEntity(Entity):
-	def __init__(self, albumType='', artist='', name='', \
+	def __init__(self, albumType='', artist='', name='', entityID=0, \
 			rating='', year='', songs=SongList([])):
 		self.albumType = albumType
 		self.artist = artist
 		self.name = name
 		self.rating = rating
 		self.year = year
+		self.entityID = entityID
 
 	def output(self, sep='\t'):
 		return sep.join([self.name, self.albumType, self.year, \
@@ -381,6 +387,10 @@ class Arguments():
 		self.fileToWrite = self.getString(args.output)
 		self.queryType = self.getString(args.type)
 		self.logos = args.logos
+
+		if (self.logos and Arguments.SONG_TYPE == self.queryType):
+			self.logos = False
+			print('-l/--logso works only with -t album/band/disco')
 
 	def getString(self, element):
 		if (isinstance(element, list)):
@@ -548,6 +558,7 @@ class Engine():
 					print()
 					break
 	def getDiscography(self):
+		regex = Regex(Regex().ID_REGEX)
 		ma = MASearcher(DiscoList([]).queryString)
 		htmlParser = DiscoHTMLParser(strict=False)
 		for each in self.entityList.listEntries:
@@ -557,12 +568,14 @@ class Engine():
 			htmlParser.feed(str(htmlData))
 			for album in htmlParser.dataToFind:
 				tmpEntity = DiscoEntity()
-				tmpEntity.name = album[0]
-				tmpEntity.rating = album[3]
-				tmpEntity.albumType = album[1]
-				tmpEntity.year = album[2]
+				tmpEntity.entityID = regex.search(album[0])
+				tmpEntity.name = album[1]
+				tmpEntity.rating = album[4]
+				tmpEntity.albumType = album[2]
+				tmpEntity.year = album[3]
 				tmpList.addEntry(tmpEntity)
-			print(tmpList.printOut())
+			print(tmpList.printOut(fileName=self.ar.fileToWrite, \
+				linkAddress=self.ar.logos))
 			htmlParser.reset()
 			htmlParser.clearResults()
 
