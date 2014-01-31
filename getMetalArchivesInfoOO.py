@@ -5,10 +5,9 @@ import re
 import json
 import urllib.parse
 import urllib.request
-import http.client
 import argparse
 from html.parser import HTMLParser
-from subprocess import call
+from subprocess import call, getoutput
 
 COUNTRY_DICT = {'Andorra':'AD','United Arab Emirates':'AE',
 'Afghanistan':'AF','Antigua and Barbuda':'AG','Anguilla':'AI',
@@ -144,10 +143,10 @@ class EntityList():
 	headerList = []
 	queryString = ''
 	listEntries = []
-	logoHost = 'www.metal-archives.com'
+	logoHost = 'http://www.metal-archives.com'
 	logoDir = '/images'
 	logoExtension = ''
-	logoFileType = ['.gif', '.jpg', '.png']
+	logoFileType = ['.jpg', '.gif', '.png']
 
 	def __init__(self, listEntries):
 		self.listEntries = listEntries
@@ -175,16 +174,11 @@ class EntityList():
 		except IndexError:
 			pass
 		result += '/' + entityID + self.logoExtension
-		try:
-			h = http.client.HTTPConnection(self.logoHost)
-			for each in self.logoFileType:
-				h.request('HEAD', result + each)
-				if (200 == h.getresponse().status):
-					return result + each
-		except IOError as err:
-			print('network problems (probably proxy stuff) {0}' \
-				.format(err))
-			
+		for each in self.logoFileType:
+			returnCode = getoutput('curl -Is ' + result + each + \
+				'  | grep HTTP')
+			if (-1 < returnCode.find('200')):
+				return result + each
 		return result
 
 	def printOut(self, sep='\t', fileName=None, linkAddress=False):
