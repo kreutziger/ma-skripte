@@ -86,7 +86,7 @@ class Regex():
 	pattern = ''
 	result  = ''
 
-	ID_REGEX = '\d+'
+	ID_REGEX = '/\d+'
 	DATE_REGEX = '\d{4}'
 	NAME_REGEX = '">.*</a'
 	URL_REGEX = 'href=".*"'
@@ -100,6 +100,8 @@ class Regex():
 			self.result = self.result[2:-3]
 		elif (self.URL_REGEX == self.pattern):
 			self.result = self.result[6:-1]
+		elif (self.ID_REGEX == self.pattern):
+			self.result = self.result[1:]
 		return self.result
 
 class DiscoHTMLParser(HTMLParser):
