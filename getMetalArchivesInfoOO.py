@@ -133,6 +133,7 @@ class DiscoHTMLParser(HTMLParser):
 
 	def handle_data(self, htmlData):
 		data = htmlData.replace('\\n', '').replace('\\t', '')
+		data = htmlData.replace('\n', '').replace('\t', '')
 		if (len(data) > 0 and self.body and self.tr):
 			self.dataToFind[-1].append(data)
 
@@ -148,7 +149,7 @@ class EntityList():
 	logoHost = 'http://www.metal-archives.com'
 	logoDir = '/images'
 	logoExtension = ''
-	logoFileType = ['.jpg', '.gif', '.png']
+	logoFileType = ['.jpg','.jpeg','.gif','.png','.JPG','.JPEG','.GIF','.PNG']
 
 	def __init__(self, listEntries):
 		self.listEntries = listEntries
@@ -561,7 +562,7 @@ class Engine():
 			print(each.output())
 			tmpList = DiscoList([])
 			htmlData = ma.getRawQuery(each.entityID)
-			htmlParser.feed(str(htmlData))
+			htmlParser.feed(htmlData.decode('utf-8'))
 			for album in htmlParser.dataToFind:
 				tmpEntity = DiscoEntity()
 				tmpEntity.entityID = regex.search(album[0])
