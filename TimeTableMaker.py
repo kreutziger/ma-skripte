@@ -15,6 +15,7 @@ class TimeTableMaker:
         self.str_arr = self.time_string.split(';')
         if len(self.str_arr) != 3:
             self.help_message()
+            sys.exit(1)
         tmp = self.str_arr[0].split(':')
         self.start = (int(tmp[0]), int(tmp[1]))
         self.pause = int(self.str_arr[1])
@@ -85,5 +86,8 @@ class TimeTableMaker:
         print(self.result)
 
 if __name__ == '__main__':
+    if (len(sys.argv) < 3):
+        TimeTableMaker.help_message()
+        sys.exit(0)
     ttm = TimeTableMaker(sys.argv[1])
     ttm.print_time_table()
