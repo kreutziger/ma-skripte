@@ -526,7 +526,7 @@ class Engine():
                     self.entityList.addEntry(self.entity)
                     self.createEntities()
                 else:
-                    print('do multiple choice...')
+                    print('do multiple choice for {0}'.format(data))
                     self.queryList.append(ma)
                     self.entity.normalize(self. \
                         multipleChoice(ma))
