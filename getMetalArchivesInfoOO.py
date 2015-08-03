@@ -49,7 +49,7 @@ COUNTRY_DICT = {'Andorra':'AD','United Arab Emirates':'AE',
 'Lesotho':'LS','Lithuania':'LT','Luxembourg':'LU','Latvia':'LV','Libya':'LY',
 'Morocco':'MA','Monaco':'MC','Moldova':'MD', 'Moldova, Republic of':'MD','Montenegro':'ME',
 'Saint Martin (French part)':'MF','Madagascar':'MG','Marshall Islands':'MH',
-'Macedonia, the former Yugoslav Republic of':'MK','Mali':'ML','Myanmar':'MM',
+'Macedonia (FYROM)':'MK','Mali':'ML','Myanmar':'MM',
 'Mongolia':'MN','Macao':'MO','Northern Mariana Islands':'MP','Martinique':'MQ',
 'Mauritania':'MR','Montserrat':'MS','Malta':'MT','Mauritius':'MU'
 ,'Maldives':'MV','Malawi':'MW','Mexico':'MX','Malaysia':'MY','Mozambique':'MZ',
@@ -67,13 +67,13 @@ COUNTRY_DICT = {'Andorra':'AD','United Arab Emirates':'AE',
 'Sierra Leone':'SL','San Marino':'SM','Senegal':'SN','Somalia':'SO',
 'Suriname':'SR','South Sudan':'SS','Sao Tome and Principe': 'ST',
 'El Salvador':'SV','Sint Maarten (Dutch part)':'SX',
-'Syrian Arab Republic':'SY','Swaziland':'SZ','Turks and Caicos Islands':'TC',
+'Syria':'SY','Swaziland':'SZ','Turks and Caicos Islands':'TC',
 'Chad':'TD','French Southern Territories':'TF','Togo':'TG','Thailand':'TH',
 'Tajikistan':'TJ','Tokelau':'TK','Timor-Leste':'TL','Turkmenistan':'TM',
 'Tunisia':'TN','Tonga':'TO','Turkey':'TR','Trinidad and Tobago':'TT',
 'Tuvalu':'TV','Taiwan':'TW','Taiwan, Province of China':'TW',
 'Tanzania, United Republic of':'TZ','Ukraine':'UA','Uganda':'UG',
-'United States Minor Outlying Islands':'UM','United States':'US','Uruguay':'UY',
+'United States Minor Outlying Islands':'UM','United States':'US', 'Unknown':'--','Uruguay':'UY',
 'Uzbekistan':'UZ','Holy See (Vatican City State)':'VA',
 'Saint Vincent and the Grenadines':'VC',
 'Venezuela':'VE',
@@ -252,8 +252,12 @@ class ArtistEntity(Entity):
         self.country = maSearcherResult[2]
 
     def output(self, sep='\t'):
-        return sep.join([self.name, COUNTRY_DICT.get(self.country), \
+        try:
+            return sep.join([self.name, COUNTRY_DICT.get(self.country), \
             self.genre])
+        except TypeError:
+            print('did not find: {0}'.format(self.country))
+            return sep.join([self.name, '--'])
 
 class AlbumEntity(Entity):
     #def __init__(self, albumType='', artist=ArtistEntity(), name='', \
