@@ -146,6 +146,7 @@ class DiscoHTMLParser(HTMLParser):
 class EntityList():
     headerList = []
     queryString = ''
+    extra = ''
     listEntries = []
     logoHost = 'http://www.metal-archives.com'
     logoDir = '/images'
@@ -223,9 +224,9 @@ class SongList(EntityList):
 class DiscoList(EntityList):
     headerList = ['Name', 'Type', 'Year', 'Rating']
     queryString= 'http://www.metal-archives.com/band/discography/id/'
+    extra = '/tab/all'
 
 class Entity():
-    
     def output(self, sep='\t'):
         pass
 
@@ -329,18 +330,20 @@ class MASearcher():
     ERROR_MSG = 'error'
 
     queryURL = ''
+    extraURL = ''
     searchTerm = ''
     resultList = []
     rawData = {}
     error = ''
     dataCount = 0
 
-    def __init__(self, queryURL=''):
+    def __init__(self, queryURL='', extraURL=''):
         self.queryURL = queryURL
+        self.extraURL = extraURL
 
     def getQuery(self, searchTerm):
         response = urllib.request.urlopen(self.queryURL + \
-            urllib.parse.quote_plus(searchTerm))
+            urllib.parse.quote_plus(searchTerm) + self.extraURL)
         content = response.read()
         self.rawData = json.loads(content.decode('utf8'))
         self.error = self.rawData.get(MASearcher.ERROR_MSG)
@@ -349,7 +352,7 @@ class MASearcher():
 
     def getRawQuery(self, searchTerm):
         response = urllib.request.urlopen(self.queryURL + \
-            urllib.parse.quote_plus(searchTerm))
+            urllib.parse.quote_plus(searchTerm) + self.extraURL)
         return response.read()
 
 class Arguments():
@@ -517,7 +520,7 @@ class Engine():
     def queryData(self):
         for data in self.dataList:
             tmpEntity = self.entity
-            ma = MASearcher(self.entityList.queryString)
+            ma = MASearcher(self.entityList.queryString, self.entityList.extra)
             ma.getQuery(data)
             if (ma.error == ''):
                 if (0 == ma.dataCount):
@@ -561,8 +564,9 @@ class Engine():
                     break
     def getDiscography(self):
         regex = Regex(Regex().ID_REGEX)
-        ma = MASearcher(DiscoList([]).queryString)
-        htmlParser = DiscoHTMLParser(strict=False)
+        ma = MASearcher(DiscoList([]).queryString, DiscoList([]).extra)
+        #htmlParser = DiscoHTMLParser(strict=False)
+        htmlParser = DiscoHTMLParser()
         for each in self.entityList.listEntries:
             print(each.output())
             tmpList = DiscoList([])
